@@ -1912,7 +1912,7 @@ chipbuffer2	dcb.b	320,0
 chipbuffer3	dcb.b	320,0
 
 ;------------------------------------------------------------------------
-		section	.bss,bss
+		section	.bss_far,bss
 
 EventBlocks	ds.w	32768
 
