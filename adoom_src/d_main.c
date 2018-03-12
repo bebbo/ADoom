@@ -86,7 +86,7 @@ static const char rcsid[] = "$Id: d_main.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 //
 void D_DoomLoop(void);
 
-char* wadfiles[MAXWADFILES] = {0};
+char* wadfiles[MAXWADFILES];
 
 boolean devparm;      // started game with -devparm
 boolean nomonsters;   // checkparm of -nomonsters
@@ -153,8 +153,8 @@ void D_ProcessEvents(void)
     event_t* ev;
 
     // IF STORE DEMO, DO NOT ACCEPT INPUT
-    if ((gamemode == commercial) && (W_CheckNumForName("map01") < 0))
-        return;
+//    if ((gamemode == commercial) && (W_CheckNumForName("map01") < 0))
+//        return;
 
     for (; eventtail != eventhead; eventtail = (++eventtail) & (MAXEVENTS - 1)) {
         ev = &events[eventtail];
@@ -192,8 +192,6 @@ void D_Display(void)
     boolean wipe;
     boolean redrawsbar;
 
-    DEBUGSTEP();
-
     if (nodrawers)
         return;  // for comparative timing / profiling
 
@@ -225,12 +223,9 @@ void D_Display(void)
     if (gamestate == GS_LEVEL && gametic)
         HU_Erase();
 
-    DEBUGSTEP();
-
     // do buffered drawing
     switch (gamestate) {
     case GS_LEVEL:
-        DEBUGSTEP();
         if (!gametic)
             break;
         /* Map On Headup Patch - CDE - 97'
@@ -246,27 +241,20 @@ void D_Display(void)
         break;
 
     case GS_INTERMISSION:
-        DEBUGSTEP();
         WI_Drawer();
         break;
 
     case GS_FINALE:
-        DEBUGSTEP();
         F_Drawer();
         break;
 
     case GS_DEMOSCREEN:
-        DEBUGSTEP();
         D_PageDrawer();
         break;
     }
 
-    DEBUGSTEP();
-
     // draw buffered stuff to screen
     I_UpdateNoBlit();
-
-    DEBUGSTEP();
 
     // draw the view directly
     if (gamestate == GS_LEVEL && (!automapactive || maponhu) && gametic)
@@ -280,8 +268,10 @@ void D_Display(void)
         HU_Drawer();
 
     // clean up border stuff
-    if (gamestate != oldgamestate && gamestate != GS_LEVEL)
-        I_SetPalette(W_CacheLumpName("PLAYPAL", PU_CACHE), 0);
+    if (gamestate != oldgamestate && gamestate != GS_LEVEL) {
+        CACHE_LUMPNUM(PLAYPAL);
+        I_SetPalette(W_CacheLumpNum(PLAYPAL, PU_CACHE), 0);
+    }
 
     // see if the border needs to be initially drawn
     if (gamestate == GS_LEVEL && oldgamestate != GS_LEVEL) {
@@ -318,7 +308,6 @@ void D_Display(void)
     M_Drawer();   // menu is drawn even on top of everything
     NetUpdate();  // send out any new accumulation
 
-    DEBUGSTEP();
     // normal update
     if (!wipe) {
         I_FinishUpdate();  // page flip or blit buffer
@@ -331,10 +320,7 @@ void D_Display(void)
 
     wipestart = I_GetTime() - 1;
 
-    DEBUGSTEP();
-
     do {
-        DEBUGSTEP();
         do {
             nowtime = I_GetTime();
             tics = nowtime - wipestart;
@@ -345,8 +331,6 @@ void D_Display(void)
         I_UpdateNoBlit();
         M_Drawer();        // menu is drawn even on top of wipes
         I_FinishUpdate();  // page flip or blit buffer
-
-        DEBUGSTEP();
     } while (!done);
 }
 
@@ -360,8 +344,6 @@ void D_DoomLoop(void)
     if (demorecording)
         G_BeginRecording();
 
-    DEBUGSTEP();
-
     if (M_CheckParm("-debugfile")) {
         char filename[20];
         sprintf(filename, "debug%i.txt", consoleplayer);
@@ -369,15 +351,8 @@ void D_DoomLoop(void)
         debugfile = fopen(filename, "w");
     }
 
-    DEBUGSTEP();
-
-//
-
-    DEBUGSTEP();
 
     while (1) {
-        DEBUGSTEP();
-
         // frame syncronous IO operations
         I_StartFrame();
 
@@ -420,7 +395,7 @@ void D_DoomLoop(void)
 //
 int demosequence;
 int pagetic;
-char* pagename;
+int pagelumpnum;
 
 //
 // D_PageTicker
@@ -437,7 +412,7 @@ void D_PageTicker(void)
 //
 void D_PageDrawer(void)
 {
-    V_DrawPatchInDirect(0, 0, 0, W_CacheLumpName(pagename, PU_CACHE));
+    V_DrawPatchInDirect(0, 0, 0, W_CacheLumpNum(pagelumpnum, PU_CACHE));
 }
 //
 // D_AdvanceDemo
@@ -471,7 +446,7 @@ void D_DoAdvanceDemo(void)
         else
             pagetic = 170;
         gamestate = GS_DEMOSCREEN;
-        pagename = "TITLEPIC";
+        pagelumpnum = W_GetNumForName("TITLEPIC");
         if (gamemode == commercial)
             S_StartMusic(mus_dm2ttl);
         else
@@ -483,7 +458,7 @@ void D_DoAdvanceDemo(void)
     case 2:
         pagetic = 200;
         gamestate = GS_DEMOSCREEN;
-        pagename = "CREDIT";
+        pagelumpnum = W_GetNumForName("CREDIT");
         break;
     case 3:
         G_DeferedPlayDemo("demo2");
@@ -492,15 +467,15 @@ void D_DoAdvanceDemo(void)
         gamestate = GS_DEMOSCREEN;
         if (gamemode == commercial) {
             pagetic = 35 * 11;
-            pagename = "TITLEPIC";
+            pagelumpnum = W_GetNumForName("TITLEPIC");
             S_StartMusic(mus_dm2ttl);
         } else {
             pagetic = 200;
 
             if (gamemode == retail)
-                pagename = "CREDIT";
+                pagelumpnum = W_GetNumForName("CREDIT");
             else
-                pagename = "HELP2";
+                pagelumpnum = W_GetNumForName("HELP2");
         }
         break;
     case 5:
@@ -563,8 +538,6 @@ void IdentifyVersion(void)
     char* doom2fwad;
     char* plutoniawad;
     char* tntwad;
-
-    printf("success 5!\n");
 
 #ifdef NORMALUNIX
     char doomwaddir[256];
@@ -684,8 +657,6 @@ void IdentifyVersion(void)
         return;
     }
 
-    printf("success 6!\n");
-
     if (!access(doom2wad, R_OK)) {
         gamemode = commercial;
         D_AddFile(doom2wad);
@@ -721,8 +692,6 @@ void IdentifyVersion(void)
         D_AddFile(doom1wad);
         return;
     }
-
-    printf("success 7!\n");
 
     printf("Game mode indeterminate.\n");
     gamemode = indetermined;
@@ -809,15 +778,11 @@ void D_DoomMain(void)
     //      print title for every printed line
     char title[256];
 
-    printf("success D_DoomMain!\n");
-
     FindResponseFile();
 
     IdentifyVersion();
 
-    printf("success 8!\n");
-
-    //  setbuf (stdout, NULL);
+    //setbuf(stdout, NULL);
     modifiedgame = false;
 
     nomonsters = M_CheckParm("-nomonsters");
@@ -831,8 +796,6 @@ void D_DoomMain(void)
         deathmatch = 2;
     else if (M_CheckParm("-deathmatch"))
         deathmatch = 1;
-
-    printf("success 9!\n");
 
     switch (gamemode) {
     case retail:
@@ -888,14 +851,10 @@ void D_DoomMain(void)
         break;
     }
 
-    printf("success 10!\n");
-
     printf("%s\n", title);
 
     if (devparm)
         printf(D_DEVSTR);
-
-    printf("success 11!\n");
 
     if (M_CheckParm("-cdrom")) {
         printf(D_CDROM);
@@ -1101,11 +1060,8 @@ void D_DoomMain(void)
         break;
     }
 
-    DEBUGSTEP();
     printf("M_Init: Init miscellaneous info.\n");
-    DEBUGSTEP();
     M_Init();
-    DEBUGSTEP();
 
     printf("R_Init: Init DOOM refresh daemon - ");
     R_Init();
@@ -1125,11 +1081,8 @@ void D_DoomMain(void)
     printf("HU_Init: Setting up heads up display.\n");
     HU_Init();
 
-    DEBUGSTEP();
     printf("ST_Init: Init status bar.\n");
     ST_Init();
-
-    DEBUGSTEP();
 
     // check for a driver that wants intermission stats
     p = M_CheckParm("-statcopy");
@@ -1141,8 +1094,6 @@ void D_DoomMain(void)
         printf("External statistics registered.\n");
     }
 
-    DEBUGSTEP();
-
     // start the apropriate game based on parms
     p = M_CheckParm("-record");
 
@@ -1150,8 +1101,6 @@ void D_DoomMain(void)
         G_RecordDemo(myargv[p + 1]);
         autostart = true;
     }
-
-    DEBUGSTEP();
 
     p = M_CheckParm("-playdemo");
     if (p && p < myargc - 1) {
@@ -1166,8 +1115,6 @@ void D_DoomMain(void)
         D_DoomLoop();  // never returns
     }
 
-    DEBUGSTEP();
-
     p = M_CheckParm("-loadgame");
     if (p && p < myargc - 1) {
         if (M_CheckParm("-cdrom"))
@@ -1177,16 +1124,12 @@ void D_DoomMain(void)
         G_LoadGame(file);
     }
 
-    DEBUGSTEP();
-
     if (gameaction != ga_loadgame) {
         if (autostart || netgame)
             G_InitNew(startskill, startepisode, startmap);
         else
             D_StartTitle();  // start up intro loop
     }
-
-    DEBUGSTEP();
 
     D_DoomLoop();  // never returns
 }

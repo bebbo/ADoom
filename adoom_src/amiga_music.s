@@ -1903,7 +1903,7 @@ validInstr	dc.b	%11111111	; (00-07) Piano
 		dc.b	%00000000	; (F8-FF)
 
 ;--------------------------------------------------------------------
-		section	.data_chip,data_c
+		section	.bss_chip,bss_c
 
 ClearBuf	dcb.b	160,0
 

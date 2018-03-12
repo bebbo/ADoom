@@ -1,8 +1,15 @@
 		mc68020
 
 		xdef	_R_RenderSegLoop
+		xdef	_R_RenderSegLoop
+
 		xdef	_R_PointToDist
+		xdef	_R_PointToDist
+
 		xdef	_R_RenderMaskedSegRange
+		xdef	_R_RenderMaskedSegRange
+
+		xdef	_R_ScaleFromGlobalAngle
 		xdef	_R_ScaleFromGlobalAngle
 
 		include	"exec/types.i"
@@ -283,7 +290,7 @@ DBITS		equ	16-11	;FRACBITS-SLOPEBITS
 ANG90		equ	$40000000
 ANGLETOFINESHIFT	equ	19
 
-		cnop	0,4
+_R_PointToDist:
 _R_PointToDist:
 		move.l	d2,-(sp)
 		move.l	_FixedDiv(a4),a1
@@ -306,12 +313,12 @@ _R_PointToDist:
 		move.l	d2,d1
 		jsr		(a1)
 		asr.l	#DBITS,d0
-		lea	_tantoangle,a0
+		lea	    _tantoangle,a0
 		move.l	(a0,d0.l*4),d1
 		add.l	#ANG90,d1
 		moveq	#ANGLETOFINESHIFT,d0
 		asr.l	d0,d1
-		lea	_finesine,a0
+		lea	    _finesine,a0
 		move.l	(a0,d1.l*4),d1
 		move.l	d2,d0
 		jsr		(a1)
@@ -443,7 +450,6 @@ ML_DONTPEGBOTTOM equ	16	;bit number is 4
 		 WORD	sd_midtexture
 		 APTR	sd_sector
 
-		cnop	0,4
 @R_RenderMaskedSegRange:
 _R_RenderMaskedSegRange:
 		movem.l	d2-d7/a2/a3/a5,-(sp)
@@ -697,8 +703,6 @@ _R_RenderMaskedSegRange:
 
 ;ANGLETOFINESHIFT	EQU	19
 ;ANG90		EQU	$40000000
-
-		cnop	0,4
 
 _R_ScaleFromGlobalAngle:
 _R_ScaleFromGlobalAngle:

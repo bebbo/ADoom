@@ -290,22 +290,36 @@ typedef enum {
 // The utility was written by Dave Taylor.
 //#include "sounds.h"
 
+#define CACHE_LUMPNUM(lumpname)  \
+    static int lumpname = -1;    \
+    if (lumpname == -1) {        \
+        lumpname = W_GetNumForName(#lumpname); \
+    }
+
+#if 0
+#define DEBUGPRINT(x)   \
+    do {                \
+        printf x;       \
+        fflush(stdout); \
+    } while (0)
+
+
 extern int debugStep;
 
-#define DEBUGPRINT(x) \
-    printf x;        \
-    fflush(stdout)
+#define DEBUGSTEP()                                                         \
+    do {                                                                    \
+        printf(">>>> %d, %s : %d \n", debugStep++, __FUNCTION__, __LINE__); \
+        fflush(stdout);                                                     \
+    } while (0);
+#else
+    #define DEBUGPRINT(x)
+    #define DEBUGSTEP()
+#endif
 
-#define DEBUGSTEP()                                                                \
-    printf(">>>> %d, %s : %d \n", debugStep++, __FUNCTION__, __LINE__); \
-    fflush(stdout);
-
-#undef DEBUGSTEP
-#define DEBUGSTEP()
-    
 #endif  // __DOOMDEF__
 //-----------------------------------------------------------------------------
 //
 // $Log:$
 //
 //-----------------------------------------------------------------------------
+

@@ -43,6 +43,7 @@
 #include "amiga_median.h"
 #include "amiga_mmu.h"
 #include "amiga_sega.h"
+#include "amiga_timer.h"
 #include "c2p8_040_amlaukka.h"
 #include "c2p_020.h"
 #include "c2p_030.h"
@@ -60,14 +61,11 @@ extern int scaledviewwidth;
 static C2PFunction c2p = NULL;
 
 /**********************************************************************/
-extern struct ExecBase *SysBase;
 struct Library *AslBase = NULL;
 struct Library *CyberGfxBase = NULL;
 struct Library *LowLevelBase = NULL;
 struct Library *KeymapBase = NULL;
 struct GfxBase *GfxBase = NULL;
-struct IORequest timereq;
-struct Device *TimerBase = NULL;
 struct IntuitionBase *IntuitionBase = NULL;
 
 volatile struct Custom *const custom = (struct Custom *)0xdff000;
@@ -92,8 +90,8 @@ static byte ptranslate[128] = {
 };
 #ifdef INDIVISION
 int video_indigfx = 0;  // Indivision GFX mode
-ULONG gfxlength = 0;
 #endif
+ULONG gfxlength = 0;
 
 static struct ScreenModeRequester *video_smr = NULL;
 static struct Screen *video_screen = NULL;
@@ -108,12 +106,15 @@ static struct ScreenBuffer *video_sb[2] = {NULL, NULL};
 static struct DBufInfo *video_db = NULL;
 static struct MsgPort *video_mp = NULL;
 static int video_which = 0;
+
 static BYTE video_sigbit1 = -1;
 static BYTE video_sigbit2 = -1;
 static volatile BYTE video_sigbit3 = -1;
 static UBYTE *video_chipbuff = NULL;
+static c2pbltnode_t video_bltnodes[2];
 static struct Task *video_maintask;
 static struct Task *video_fliptask = NULL;
+
 static int video_depth = 0;
 static int video_oscan_height;
 static FAR ULONG video_colourtable[NUMPALETTES][1 + 3 * 256 + 1];
@@ -151,7 +152,7 @@ static struct IOStdReq *ih_io = NULL;
 static BOOL inputhandler_is_open = FALSE;
 
 static struct InputEvent *SAVEDS INTERRUPT video_inputhandler(REG(a0, struct InputEvent *ie),
-                                                                      REG(a1, APTR data));
+                                                              REG(a1, APTR data));
 static int xlate[0x68] = {'`',
                           '1',
                           '2',
@@ -284,30 +285,18 @@ static struct GRF_Screen *video_grf_screen = NULL;
 #endif
 
 /****************************************************************************/
-static ULONG eclocks_per_second; /* EClock frequency in Hz */
-
-static struct EClockVal start_time;
 static unsigned int blit_time = 0;
 static unsigned int safe_time = 0;
 static unsigned int c2p_time = 0;
 static unsigned int ccs_time = 0;
+static unsigned int video_safe_time = 0;
+static unsigned int video_disp_time = 0;
 static unsigned int wpa8_time = 0;
 static unsigned int lock_time = 0;
 static unsigned int total_frames = 0;
 
 /****************************************************************************/
-static __inline void start_timer(void)
-{
-    ReadEClock(&start_time);
-}
-/****************************************************************************/
-static __inline unsigned int end_timer(void)
-{
-    struct EClockVal end_time;
-
-    ReadEClock(&end_time);
-    return end_time.ev_lo - start_time.ev_lo;
-}
+static void print_timers(void);
 
 /****************************************************************************/
 
@@ -433,18 +422,22 @@ static void video_do_fps(struct RastPort *rp, int yoffset)
     ULONG x;
     static struct EClockVal start_time = {0, 0};
     struct EClockVal end_time;
-    char msg[4];
+    char msg[6];
 
-    ReadEClock(&end_time);
+    ULONG eclocks_per_ms = ReadEClock(&end_time) / 1000;
     x = end_time.ev_lo - start_time.ev_lo;
     if (x != 0) {
-        x = (eclocks_per_second + (x >> 1)) / x; /* round to nearest */
-        msg[0] = (x % 1000) / 100 + '0';
-        msg[1] = (x % 100) / 10 + '0';
-        msg[2] = (x % 10) + '0';
-        msg[3] = '\0';
-        Move(rp, SCREENWIDTH - 24, yoffset + 6);
-        Text(rp, msg, 3);
+        //x = (eclocks_per_second + (x >> 1)) / x; /* round to nearest */
+        x =  (x * 100) / eclocks_per_ms; /* 1ms * 100 */
+        msg[0] = (x / 10000) % 10 + '0';
+        msg[1] = (x / 1000) % 10 + '0';
+        msg[2] = (x / 100) % 10 + '0';
+        msg[3] = '.';
+        msg[4] = (x / 10) % 10 + '0';
+        msg[5] = (x % 10) + '0';
+        msg[6] = '\0';
+        Move(rp, SCREENWIDTH - 48, yoffset + 6);
+        Text(rp, msg, 6);
     }
     start_time = end_time;
 }
@@ -465,11 +458,16 @@ static void SAVEDS INTERRUPT video_flipscreentask(void)
 {
     ULONG sig;
     struct MsgPort *video_dispport, *video_safeport;
+    ULONG safe_signal, display_signal;
+    ULONG video_sigbit3_mask;
+
     BOOL going, video_disp, video_safe;
+    struct EClockVal start_time;
     int i;
 
-    video_sigbit3 = AllocSignal(-1);
+    video_sigbit3_mask = 1 << video_sigbit3;
     Signal(video_maintask, SIGBREAKF_CTRL_F);
+
     video_dispport = CreatePort(NULL, 0);
     video_safeport = CreatePort(NULL, 0);
     video_disp = TRUE;
@@ -478,12 +476,16 @@ static void SAVEDS INTERRUPT video_flipscreentask(void)
         video_sb[i]->sb_DBufInfo->dbi_DispMessage.mn_ReplyPort = video_dispport;
         video_sb[i]->sb_DBufInfo->dbi_SafeMessage.mn_ReplyPort = video_safeport;
     }
-    going = (video_sigbit3 != -1) && (video_dispport != NULL) && (video_safeport != NULL);
+    safe_signal = 1 << video_safeport->mp_SigBit;
+    display_signal = 1 << video_dispport->mp_SigBit;
+
+    going = (video_dispport != NULL) && (video_safeport != NULL);
     while (going) {
-        sig = Wait(1 << video_sigbit3 | SIGBREAKF_CTRL_C);
-        if ((sig & (1 << video_sigbit3)) != 0) {
-            if (video_doing_fps)
+        sig = Wait(video_sigbit3_mask | SIGBREAKF_CTRL_C);
+        if (sig & video_sigbit3_mask) {
+            if (video_doing_fps) {
                 video_do_fps(&video_rastport[video_which], 0);
+            }
             if (video_palette_changed > 0) {
                 LoadRGB32(&video_screen->ViewPort, video_colourtable[video_palette_index]);
                 video_palette_changed--; /* keep it set for 2 frames for dblbuffing */
@@ -493,17 +495,24 @@ static void SAVEDS INTERRUPT video_flipscreentask(void)
                 video_safe = FALSE;
             }
             if (!video_safe) { /* wait until safe */
-                Wait(1 << video_safeport->mp_SigBit);
-                while (GetMsg(video_safeport) != NULL) /* clear message queue */
+                start_timer();
+                Wait(safe_signal);
+                while (GetMsg(video_safeport) != NULL) /* clear message queue */ {
                     /* do nothing */;
+                }
                 video_safe = TRUE;
+                video_safe_time += end_timer();
             }
             Signal(video_maintask, SIGBREAKF_CTRL_F);
-            if (!video_disp) { /* wait for previous frame to be displayed */
-                Wait(1 << video_dispport->mp_SigBit);
-                while (GetMsg(video_dispport) != NULL) /* clear message queue */
+            if (!video_disp) {
+                /* wait for previous frame to be displayed */
+                start_timer();
+                Wait(display_signal);
+                while (GetMsg(video_dispport) != NULL) /* clear message queue */{
                     /* do nothing */;
+                }
                 video_disp = TRUE;
+                video_disp_time += end_timer();
             }
         }
         if ((sig & SIGBREAKF_CTRL_C) != 0) {
@@ -511,19 +520,17 @@ static void SAVEDS INTERRUPT video_flipscreentask(void)
         }
     }
     if (!video_safe) { /* wait for safe */
-        Wait(1 << video_safeport->mp_SigBit);
+        Wait(safe_signal);
         while (GetMsg(video_safeport) != NULL) /* clear message queue */
             /* do nothing */;
         video_safe = TRUE;
     }
     if (!video_disp) { /* wait for last frame to be displayed */
-        Wait(1 << video_dispport->mp_SigBit);
+        Wait(display_signal);
         while (GetMsg(video_dispport) != NULL) /* clear message queue */
             /* do nothing */;
         video_disp = TRUE;
     }
-    if (video_sigbit3 != -1)
-        FreeSignal(video_sigbit3);
     if (video_dispport != NULL)
         DeletePort(video_dispport);
     if (video_safeport != NULL)
@@ -536,7 +543,6 @@ static void SAVEDS INTERRUPT video_flipscreentask(void)
 // Called by D_DoomMain,
 // determines the hardware configuration
 // and sets up the video mode
-
 void I_InitGraphics(void)
 {
     int i, retries, config_done;
@@ -547,44 +553,23 @@ void I_InitGraphics(void)
     DisplayInfoHandle handle;
     struct DisplayInfo dispinfo;
     struct DimensionInfo dimsinfo;
-    static struct TextAttr topaz8 = {"topaz.font", 8, FS_NORMAL, FPF_ROMFONT};
-
-    DEBUGSTEP();
+    struct TextAttr topaz8 = {"topaz.font", 8, FS_NORMAL, FPF_ROMFONT};
 
     video_maintask = FindTask(NULL);
-
-    DEBUGSTEP();
 
     if ((KeymapBase = OpenLibrary("keymap.library", 0)) == NULL)
         I_Error("Can't open keymap.library");
 
-    DEBUGSTEP();
-
-    if ((GfxBase = (struct GfxBase*)OpenLibrary("graphics.library", 0)) == NULL)
+    if ((GfxBase = (struct GfxBase*)OpenLibrary(GRAPHICSNAME, 0)) == NULL)
         I_Error("Can't open graphics.library");
 
     if ((IntuitionBase = (struct IntuitionBase*)OpenLibrary("intuition.library", 0)) == NULL)
         I_Error("Can't open intuition.library");
 
-    DEBUGSTEP();
-
     if ((video_topaz8font = OpenFont(&topaz8)) == NULL)
         I_Error("Can't open topaz8 font");
 
-    DEBUGSTEP();
-
-    OpenDevice("timer.device", UNIT_ECLOCK, &timereq, 0);
-    
-    if (OpenDevice(TIMERNAME, UNIT_ECLOCK, &timereq, 0))
-        I_Error("Can't open timer.device!");
-
-    TimerBase = timereq.io_Device;
-    
-    eclocks_per_second = ReadEClock(&start_time);
-
     video_doing_fps = M_CheckParm("-fps");
-
-    DEBUGSTEP();
 
 #ifdef GRAFFITI
     if (video_graffiti != 0) {
@@ -663,18 +648,14 @@ void I_InitGraphics(void)
         } else
 #endif
         {
-            DEBUGSTEP();
 
             if (AslBase == NULL) {
                 if ((AslBase = OpenLibrary("asl.library", 37L)) == NULL ||
                     (video_smr = AllocAslRequestTags(ASL_ScreenModeRequest, TAG_DONE)) == NULL) {
-                    I_Error(
-                        "OpenLibrary("
-                        "asl.library"
-                        ", 37) failed");
+                    I_Error("OpenLibrary(asl.library, 37) failed");
                 }
             }
-            CyberGfxBase = OpenLibrary("cybergraphics.library", 0); /* may be NULL */
+            CyberGfxBase = OpenLibrary(CYBERGFXNAME, 0); /* may be NULL */
 
             /* first check tooltypes for SCREENMODE */
             mode = -1;
@@ -707,14 +688,9 @@ void I_InitGraphics(void)
                 }
             }
 
-            DEBUGSTEP();
-
             if ((handle = FindDisplayInfo(mode)) == NULL) {
                 I_Error("Can't FindDisplayInfo() for mode %08x", mode);
             }
-
-            DEBUGSTEP();
-
             if ((nbytes = GetDisplayInfoData(handle, (UBYTE *)&dispinfo, sizeof(struct DisplayInfo), DTAG_DISP, 0)) <
                 40 /*sizeof(struct DisplayInfo)*/) {
                 I_Error("Can't GetDisplayInfoData() for mode %08x, got %d bytes", mode, nbytes);
@@ -738,8 +714,6 @@ void I_InitGraphics(void)
                  !video_is_cyber_mode && (dispinfo.PropertyFlags & DIPF_IS_FOREIGN) == 0);
 
             video_is_ehb_mode = ((dispinfo.PropertyFlags & DIPF_IS_EXTRAHALFBRITE) != 0);
-
-            DEBUGSTEP();
 
             /* manual overrides */
             if (M_CheckParm("-rtg"))
@@ -771,8 +745,6 @@ void I_InitGraphics(void)
             rect.MinY = 0;
             rect.MaxX = SCREENWIDTH - 1;
             rect.MaxY = SCREENHEIGHT - 1;
-
-            DEBUGSTEP();
 
             /* use the mmu hack only if cpu is 68040+ and user specified -mmu */
             if (M_CheckParm("-mmu") && cpu_type >= 68040)
@@ -812,8 +784,6 @@ void I_InitGraphics(void)
                 if (!video_is_using_blitter)
                     c2p = c2p8_reloc(screens[0], &video_bitmap[0], SysBase);
 
-                DEBUGSTEP();
-
                 if ((video_screen = OpenScreenTags(
                          NULL, SA_Type, CUSTOMSCREEN | CUSTOMBITMAP, SA_DisplayID, mode, SA_DClip, (ULONG)&rect,
                          SA_Width, SCREENWIDTH, SA_Height, SCREENHEIGHT, SA_Depth, video_depth, SA_Font, (ULONG)&topaz8,
@@ -843,8 +813,6 @@ void I_InitGraphics(void)
                     video_which = 1;
                     ChangeVPBitMap(&video_screen->ViewPort, &video_bitmap[0], video_db);
                 }
-
-                DEBUGSTEP();
             } else { /* non-native ScreenMode */
                 if (video_is_cyber_mode && M_CheckParm("-directcgx"))
                     video_is_directcgx = TRUE;
@@ -883,8 +851,6 @@ void I_InitGraphics(void)
     }
 #endif
 
-    DEBUGSTEP();
-
     video_is_using_inputhandler = M_CheckParm("-inputhandler");
     if (video_is_using_inputhandler)
         idcmp = 0;
@@ -899,16 +865,12 @@ void I_InitGraphics(void)
         }
     }
 
-    DEBUGSTEP();
-
     if ((video_window = OpenWindowTags(NULL, WA_Left, 0, WA_Top, 0, WA_Width, video_graffiti != 0 ? 640 : SCREENWIDTH,
                                        WA_Height, video_is_directcgx ? video_oscan_height << 1 : SCREENHEIGHT, WA_IDCMP,
                                        idcmp, WA_Flags, wflags, WA_CustomScreen, (ULONG)video_screen, TAG_DONE)) ==
         NULL) {
         I_Error("OpenWindow() failed");
     }
-
-    DEBUGSTEP();
 
     InitBitMap(&video_tmp_bm, video_depth, SCREENWIDTH, 1);
     for (depth = 0; depth < video_depth; depth++)
@@ -918,11 +880,10 @@ void I_InitGraphics(void)
     video_temprp.Layer = NULL;
     video_temprp.BitMap = &video_tmp_bm;
 
-    DEBUGSTEP();
-
     if (video_is_native_mode) {
         if (video_is_using_blitter) {
-            if ((video_sigbit1 = AllocSignal(-1)) == -1 || (video_sigbit2 = AllocSignal(-1)) == -1)
+            if ((video_sigbit1 = AllocSignal(-1)) == -1 || (video_sigbit2 = AllocSignal(-1)) == -1 ||
+                (video_sigbit3 = AllocSignal(-1)) == -1)
                 I_Error("Can't allocate signal!\n");
             Signal(video_maintask, (1 << video_sigbit1) | (1 << video_sigbit2));
             /* initial state is finished */
@@ -933,22 +894,26 @@ void I_InitGraphics(void)
                 I_Error("Subtask couldn't allocate sigbit");
             if ((video_chipbuff = AllocMem(2 * SCREENWIDTH * SCREENHEIGHT, MEMF_CHIP | MEMF_CLEAR)) == NULL)
                 I_Error("Out of CHIP memory allocating %d bytes", 2 * SCREENWIDTH * SCREENHEIGHT);
-
-            DEBUGSTEP();
-            if (!video_is_ehb_mode)
-                printf("c2p1x1_cpu3blit1_queue_init %p", &c2p1x1_cpu3blit1_queue_init); fflush(stdout);
-                c2p1x1_cpu3blit1_queue_init(SCREENWIDTH, SCREENHEIGHT, 0, ((unsigned)SCREENWIDTH * SCREENHEIGHT) / 8,
-                                            1 << video_sigbit1, 1 << video_sigbit3, video_maintask, video_fliptask,
-                                            video_chipbuff);
+            if (!video_is_ehb_mode) {
+                int halfHeight = SCREENHEIGHT / 2;
+                memset(video_bltnodes, 0, sizeof(video_bltnodes));  // ideally, this should not be needed here
+                // The c2p task is devided between Blitter and CPU.
+                // Additionaly, in order to overlap Blitter and CPU work, we let the Blitter start
+                // working on the first half of the screen, while the CPU prepares data for the second
+                // half. Once the Blitter is finished, it'll signal the fliptask who will automatically
+                // put the new buffer on screen.
+                c2p1x1_cpu3blit1_queue_init(SCREENWIDTH, halfHeight, 0, SCREENWIDTH * SCREENHEIGHT / 8, 0, 0,
+                                            video_maintask, video_fliptask, video_chipbuff, &video_bltnodes[0]);
+                c2p1x1_cpu3blit1_queue_init(SCREENWIDTH, halfHeight, /*SCREENWIDTH * halfHeight*/ 0,
+                                            SCREENWIDTH * SCREENHEIGHT / 8, 1 << video_sigbit1,
+                                            1 << video_sigbit3, video_maintask, video_fliptask,
+                                            video_chipbuff + SCREENWIDTH * halfHeight, &video_bltnodes[1]);
+            }
         }
     }
 
-    DEBUGSTEP();
-
     if (!M_CheckParm("-mousepointer"))
         SetPointer(video_window, emptypointer, 1, 16, 0, 0);
-
-    DEBUGSTEP();
 
     I_RecalcPalettes();
 
@@ -985,9 +950,8 @@ void I_InitGraphics(void)
     if (M_CheckParm("-joypad")) {
         if ((LowLevelBase = OpenLibrary("lowlevel.library", 0)) == NULL)
             I_Error("-joypad option specified and can't open lowlevel.library");
-    } else {
-        DEBUGSTEP();
 
+    } else {
         if ((gameport_mp = CreatePort(NULL, 0)) == NULL ||
             (gameport_io = (struct IOStdReq *)CreateExtIO(gameport_mp, sizeof(struct IOStdReq))) == NULL ||
             OpenDevice("gameport.device", 1, (struct IORequest *)gameport_io, 0) != 0)
@@ -1130,6 +1094,10 @@ void I_ShutdownGraphics(void)
             FreeSignal(video_sigbit2);
             video_sigbit2 = -1;
         }
+        if (video_sigbit3 != -1) {
+            FreeSignal(video_sigbit3);
+            video_sigbit3 = -1;
+        }
     }
     if (video_window != NULL) {
         ClearPointer(video_window);
@@ -1218,8 +1186,19 @@ void I_ShutdownGraphics(void)
         CloseFont(video_topaz8font);
         video_topaz8font = NULL;
     }
-    if (TimerBase)
-        CloseDevice(&timereq);
+    if (IntuitionBase != NULL) {
+        CloseLibrary((struct Library*)IntuitionBase);
+    }
+    if (GfxBase != NULL) {
+        CloseLibrary((struct Library*)GfxBase);
+    }
+    if (video_smr != NULL) {
+        FreeAslRequest(video_smr);
+        video_smr = NULL;
+    }
+    if (AslBase != NULL) {
+        CloseLibrary(AslBase);
+    }
 }
 
 /**********************************************************************/
@@ -1231,7 +1210,6 @@ void I_RecalcPalettes(void)
     static UBYTE gpalette[3 * 256];
     static int lu_palette;
 
-    DEBUGSTEP();
     lu_palette = W_GetNumForName("PLAYPAL");
     for (p = 0; p < NUMPALETTES; p++) {
         palette = (byte *)W_CacheLumpNum(lu_palette, PU_STATIC) + p * 768;
@@ -1268,7 +1246,6 @@ void I_RecalcPalettes(void)
                 } else
 #endif
                 {
-                    DEBUGSTEP();
                     i = 3 * 256 - 1;
                     video_colourtable[p][i + 2] = 0; // finish the list
                     do {
@@ -1316,6 +1293,7 @@ void I_MarkRect(REG(d0, int left), REG(d1, int top), REG(d2, int width), REG(d3,
 /**********************************************************************/
 void I_StartUpdate(void)
 {
+    struct EClockVal start_time;
     UBYTE *base_address;
 
     if (video_is_directcgx) {
@@ -1347,6 +1325,7 @@ void I_FinishUpdate(void)
 /* This needs optimising to copy just the parts that changed,
    especially if the user has shrunk the playscreen. */
 {
+    struct EClockVal start_time;
     int top, left, width, height;
 
     total_frames++;
@@ -1440,7 +1419,6 @@ void I_FinishUpdate(void)
 
     if (video_is_native_mode) {
         if (video_is_using_blitter) {
-            DEBUGSTEP();
             start_timer();
             Wait(1 << video_sigbit1); /* wait for prev c2p() to finish pass 3 */
             blit_time += end_timer();
@@ -1458,12 +1436,17 @@ void I_FinishUpdate(void)
                           1 << video_sigbit2, 1 << video_sigbit3, SCREENWIDTH * height, (SCREENWIDTH >> 3) * top,
                           video_xlate[video_palette_index], video_fliptask, video_chipbuff);
             } else {
-                if (cpu_type < 68030)
+                if (cpu_type < 68030) {
                     c2p_8_020(&screens[0][SCREENWIDTH * top], video_bitmap[video_which].Planes, 1 << video_sigbit1,
                               1 << video_sigbit2, 1 << video_sigbit3, SCREENWIDTH * height, (SCREENWIDTH >> 3) * top,
                               video_fliptask, video_chipbuff);
-                else
-                    c2p1x1_cpu3blit1_queue(screens[0], video_raster[video_which]);
+                } else {
+                    int halfHeight = SCREENHEIGHT / 2;
+                    c2p1x1_cpu3blit1_queue(screens[0], video_raster[video_which], &video_bltnodes[0]);
+                    c2p1x1_cpu3blit1_queue(screens[0] + SCREENWIDTH * halfHeight,
+                                           video_raster[video_which] + SCREENWIDTH * halfHeight / 8,
+                                           &video_bltnodes[1]);
+                }
             }
             c2p_time += end_timer();
             video_blit_is_in_progress = TRUE;
@@ -1513,6 +1496,10 @@ void I_FinishUpdate(void)
         wpa8_time += end_timer();
         if (video_doing_fps)
             video_do_fps(video_window->RPort, 0);
+    }
+
+    if (video_doing_fps) {
+        print_timers();
     }
 }
 
@@ -1652,7 +1639,7 @@ int xlate_key(UWORD rawkey, UWORD qualifier, APTR eventptr)
 /**********************************************************************/
 //
 static struct InputEvent *SAVEDS INTERRUPT video_inputhandler(REG(a0, struct InputEvent *ie),
-                                                                      REG(a1, APTR data))
+                                                              REG(a1, APTR data))
 {
     event_t event;
     static event_t mouseevent = {0};
@@ -1714,8 +1701,6 @@ void amiga_getevents(void)
     static event_t joyevent = {0}, mouseevent = {0};
     ULONG currSega;
     int doomkey;
-
-    DEBUGSTEP();
 
     if (video_window != NULL && video_window->UserPort != NULL) {
         while ((msg = (struct IntuiMessage *)GetMsg(video_window->UserPort)) != NULL) {
@@ -1996,30 +1981,32 @@ void amiga_getevents(void)
 }
 
 /**********************************************************************/
-static void calc_time(ULONG time, char *msg)
-{
-    printf("Total %s = %u us  (%u us/frame)\n", msg, (ULONG)(1000000.0 * ((double)time) / ((double)eclocks_per_second)),
-           (ULONG)(1000000.0 * ((double)time) / ((double)eclocks_per_second) / ((double)total_frames)));
-}
 
 /**********************************************************************/
-void _STDvideo_cleanup(void)
+void NOINLINE print_timers(void)
 {
-    I_ShutdownGraphics();
-    if (video_smr != NULL) {
-        FreeAslRequest(video_smr);
-        video_smr = NULL;
-    }
-
     /* printf ("EClocks per second = %d\n", eclocks_per_second); */
-    if (total_frames > 0) {
+    if (total_frames >= 10) {
         printf("Total number of frames = %u\n", total_frames);
-        calc_time(blit_time, "blit wait time        ");
-        calc_time(safe_time, "safe wait time        ");
-        calc_time(c2p_time, "Chunky2Planar time    ");
-        calc_time(ccs_time, "CopyChunkyScreen time ");
-        calc_time(wpa8_time, "WritePixelArray8 time ");
-        calc_time(lock_time, "LockBitMap time       ");
+        PrintTime(blit_time,     "blit wait time        ", total_frames);
+        PrintTime(safe_time,     "safe wait time        ", total_frames);
+        PrintTime(c2p_time,      "Chunky2Planar time    ", total_frames);
+        PrintTime(video_safe_time, "video wait time    ", total_frames);
+        PrintTime(video_disp_time, "video disp time    ", total_frames);
+        //        calc_time(ccs_time, "CopyChunkyScreen time ");
+        //        calc_time(wpa8_time, "WritePixelArray8 time ");
+        //        calc_time(lock_time, "LockBitMap time       ");
+
+        total_frames = 0;
+
+        blit_time = 0;
+        safe_time = 0;
+        c2p_time = 0;
+        ccs_time = 0;
+        wpa8_time = 0;
+        lock_time = 0;
+        video_safe_time = 0;
+        video_disp_time = 0;
     }
 }
 

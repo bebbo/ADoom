@@ -5,201 +5,131 @@
 #define CLIB_DOOMSND_PROTOS_H
 #endif
 
-#ifndef __INLINE_STUB_H
-#include <inline/stubs.h>
-#endif
-
 #include <exec/types.h>
 
-#ifndef BASE_EXT_DECL
-#define BASE_EXT_DECL
-#define BASE_EXT_DECL0 extern struct Library * DoomSndBase;
+#ifdef __cplusplus
+extern "C" {
 #endif
-#ifndef BASE_PAR_DECL
-#define BASE_PAR_DECL
-#define BASE_PAR_DECL0 void
-#endif
+
 #ifndef DOOMSND_BASE_NAME
 #define DOOMSND_BASE_NAME DoomSndBase
 #endif
 
-BASE_EXT_DECL0
+#define Sfx_SetVol(vol) ({ \
+  int _Sfx_SetVol_vol = (vol); \
+  ({ \
+  register char * _Sfx_SetVol__bn __asm("a6") = (char *) (DOOMSND_BASE_NAME);\
+  ((void (*)(char * __asm("a6"), int __asm("d0"))) \
+  (_Sfx_SetVol__bn - 30))(_Sfx_SetVol__bn, _Sfx_SetVol_vol); \
+});})
 
-static __inline void
-Sfx_SetVol(BASE_PAR_DECL int vol)
-{
-  BASE_EXT_DECL
-  register struct Library * a6 __asm("a6") = DOOMSND_BASE_NAME;
-  register int d0 __asm("d0") = vol;
-  __asm volatile ("jsr a6@(-0x1e:W)"
-  : /* No Output */
-  : "r" (a6), "r" (d0)
-  : "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
+#define Sfx_Start(wave, cnum, step, vol, sep, length) ({ \
+  char * _Sfx_Start_wave = (wave); \
+  int _Sfx_Start_cnum = (cnum); \
+  int _Sfx_Start_step = (step); \
+  int _Sfx_Start_vol = (vol); \
+  int _Sfx_Start_sep = (sep); \
+  int _Sfx_Start_length = (length); \
+  ({ \
+  register char * _Sfx_Start__bn __asm("a6") = (char *) (DOOMSND_BASE_NAME);\
+  ((void (*)(char * __asm("a6"), char * __asm("a0"), int __asm("d0"), int __asm("d1"), int __asm("d2"), int __asm("d3"), int __asm("d4"))) \
+  (_Sfx_Start__bn - 36))(_Sfx_Start__bn, _Sfx_Start_wave, _Sfx_Start_cnum, _Sfx_Start_step, _Sfx_Start_vol, _Sfx_Start_sep, _Sfx_Start_length); \
+});})
+
+#define Sfx_Update(cnum, step, vol, sep) ({ \
+  int _Sfx_Update_cnum = (cnum); \
+  int _Sfx_Update_step = (step); \
+  int _Sfx_Update_vol = (vol); \
+  int _Sfx_Update_sep = (sep); \
+  ({ \
+  register char * _Sfx_Update__bn __asm("a6") = (char *) (DOOMSND_BASE_NAME);\
+  ((void (*)(char * __asm("a6"), int __asm("d0"), int __asm("d1"), int __asm("d2"), int __asm("d3"))) \
+  (_Sfx_Update__bn - 42))(_Sfx_Update__bn, _Sfx_Update_cnum, _Sfx_Update_step, _Sfx_Update_vol, _Sfx_Update_sep); \
+});})
+
+#define Sfx_Stop(cnum) ({ \
+  int _Sfx_Stop_cnum = (cnum); \
+  ({ \
+  register char * _Sfx_Stop__bn __asm("a6") = (char *) (DOOMSND_BASE_NAME);\
+  ((void (*)(char * __asm("a6"), int __asm("d0"))) \
+  (_Sfx_Stop__bn - 48))(_Sfx_Stop__bn, _Sfx_Stop_cnum); \
+});})
+
+#define Sfx_Done(cnum) ({ \
+  int _Sfx_Done_cnum = (cnum); \
+  ({ \
+  register char * _Sfx_Done__bn __asm("a6") = (char *) (DOOMSND_BASE_NAME);\
+  ((int (*)(char * __asm("a6"), int __asm("d0"))) \
+  (_Sfx_Done__bn - 54))(_Sfx_Done__bn, _Sfx_Done_cnum); \
+});})
+
+#define Mus_SetVol(vol) ({ \
+  int _Mus_SetVol_vol = (vol); \
+  ({ \
+  register char * _Mus_SetVol__bn __asm("a6") = (char *) (DOOMSND_BASE_NAME);\
+  ((void (*)(char * __asm("a6"), int __asm("d0"))) \
+  (_Mus_SetVol__bn - 60))(_Mus_SetVol__bn, _Mus_SetVol_vol); \
+});})
+
+#define Mus_Register(musdata) ({ \
+  void * _Mus_Register_musdata = (musdata); \
+  ({ \
+  register char * _Mus_Register__bn __asm("a6") = (char *) (DOOMSND_BASE_NAME);\
+  ((int (*)(char * __asm("a6"), void * __asm("a0"))) \
+  (_Mus_Register__bn - 66))(_Mus_Register__bn, _Mus_Register_musdata); \
+});})
+
+#define Mus_Unregister(handle) ({ \
+  int _Mus_Unregister_handle = (handle); \
+  ({ \
+  register char * _Mus_Unregister__bn __asm("a6") = (char *) (DOOMSND_BASE_NAME);\
+  ((void (*)(char * __asm("a6"), int __asm("d0"))) \
+  (_Mus_Unregister__bn - 72))(_Mus_Unregister__bn, _Mus_Unregister_handle); \
+});})
+
+#define Mus_Play(handle, looping) ({ \
+  int _Mus_Play_handle = (handle); \
+  int _Mus_Play_looping = (looping); \
+  ({ \
+  register char * _Mus_Play__bn __asm("a6") = (char *) (DOOMSND_BASE_NAME);\
+  ((void (*)(char * __asm("a6"), int __asm("d0"), int __asm("d1"))) \
+  (_Mus_Play__bn - 78))(_Mus_Play__bn, _Mus_Play_handle, _Mus_Play_looping); \
+});})
+
+#define Mus_Stop(handle) ({ \
+  int _Mus_Stop_handle = (handle); \
+  ({ \
+  register char * _Mus_Stop__bn __asm("a6") = (char *) (DOOMSND_BASE_NAME);\
+  ((void (*)(char * __asm("a6"), int __asm("d0"))) \
+  (_Mus_Stop__bn - 84))(_Mus_Stop__bn, _Mus_Stop_handle); \
+});})
+
+#define Mus_Pause(handle) ({ \
+  int _Mus_Pause_handle = (handle); \
+  ({ \
+  register char * _Mus_Pause__bn __asm("a6") = (char *) (DOOMSND_BASE_NAME);\
+  ((void (*)(char * __asm("a6"), int __asm("d0"))) \
+  (_Mus_Pause__bn - 90))(_Mus_Pause__bn, _Mus_Pause_handle); \
+});})
+
+#define Mus_Resume(handle) ({ \
+  int _Mus_Resume_handle = (handle); \
+  ({ \
+  register char * _Mus_Resume__bn __asm("a6") = (char *) (DOOMSND_BASE_NAME);\
+  ((void (*)(char * __asm("a6"), int __asm("d0"))) \
+  (_Mus_Resume__bn - 96))(_Mus_Resume__bn, _Mus_Resume_handle); \
+});})
+
+#define Mus_Done(handle) ({ \
+  int _Mus_Done_handle = (handle); \
+  ({ \
+  register char * _Mus_Done__bn __asm("a6") = (char *) (DOOMSND_BASE_NAME);\
+  ((int (*)(char * __asm("a6"), int __asm("d0"))) \
+  (_Mus_Done__bn - 102))(_Mus_Done__bn, _Mus_Done_handle); \
+});})
+
+
+#ifdef __cplusplus
 }
-
-static __inline void
-Sfx_Start(BASE_PAR_DECL char * wave, int cnum, int step, int vol, int sep, int length)
-{
-  BASE_EXT_DECL
-  register struct Library * a6 __asm("a6") = DOOMSND_BASE_NAME;
-  register char * a0 __asm("a0") = wave;
-  register int d0 __asm("d0") = cnum;
-  register int d1 __asm("d1") = step;
-  register int d2 __asm("d2") = vol;
-  register int d3 __asm("d3") = sep;
-  register int d4 __asm("d4") = length;
-  __asm volatile ("jsr a6@(-0x24:W)"
-  : /* No Output */
-  : "r" (a6), "r" (a0), "r" (d0), "r" (d1), "r" (d2), "r" (d3), "r" (d4)
-  : "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
-}
-
-static __inline void
-Sfx_Update(BASE_PAR_DECL int cnum, int step, int vol, int sep)
-{
-  BASE_EXT_DECL
-  register struct Library * a6 __asm("a6") = DOOMSND_BASE_NAME;
-  register int d0 __asm("d0") = cnum;
-  register int d1 __asm("d1") = step;
-  register int d2 __asm("d2") = vol;
-  register int d3 __asm("d3") = sep;
-  __asm volatile ("jsr a6@(-0x2a:W)"
-  : /* No Output */
-  : "r" (a6), "r" (d0), "r" (d1), "r" (d2), "r" (d3)
-  : "a0", "a1", "fp0", "fp1", "cc", "memory");
-}
-
-static __inline void
-Sfx_Stop(BASE_PAR_DECL int cnum)
-{
-  BASE_EXT_DECL
-  register struct Library * a6 __asm("a6") = DOOMSND_BASE_NAME;
-  register int d0 __asm("d0") = cnum;
-  __asm volatile ("jsr a6@(-0x30:W)"
-  : /* No Output */
-  : "r" (a6), "r" (d0)
-  : "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
-}
-
-static __inline int
-Sfx_Done(BASE_PAR_DECL int cnum)
-{
-  BASE_EXT_DECL
-  register int res __asm("d0");
-  register struct Library * a6 __asm("a6") = DOOMSND_BASE_NAME;
-  register int d0 __asm("d0") = cnum;
-  __asm volatile ("jsr a6@(-0x36:W)"
-  : "=r" (res)
-  : "r" (a6), "r" (d0)
-  : "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
-  return res;
-}
-
-static __inline void
-Mus_SetVol(BASE_PAR_DECL int vol)
-{
-  BASE_EXT_DECL
-  register struct Library * a6 __asm("a6") = DOOMSND_BASE_NAME;
-  register int d0 __asm("d0") = vol;
-  __asm volatile ("jsr a6@(-0x3c:W)"
-  : /* No Output */
-  : "r" (a6), "r" (d0)
-  : "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
-}
-
-static __inline int
-Mus_Register(BASE_PAR_DECL void * musdata)
-{
-  BASE_EXT_DECL
-  register int res __asm("d0");
-  register struct Library * a6 __asm("a6") = DOOMSND_BASE_NAME;
-  register void * a0 __asm("a0") = musdata;
-  __asm volatile ("jsr a6@(-0x42:W)"
-  : "=r" (res)
-  : "r" (a6), "r" (a0)
-  :  "d1", "a1", "fp0", "fp1", "cc", "memory");
-  return res;
-}
-
-static __inline void
-Mus_Unregister(BASE_PAR_DECL int handle)
-{
-  BASE_EXT_DECL
-  register struct Library * a6 __asm("a6") = DOOMSND_BASE_NAME;
-  register int d0 __asm("d0") = handle;
-  __asm volatile ("jsr a6@(-0x48:W)"
-  : /* No Output */
-  : "r" (a6), "r" (d0)
-  : "d0", "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
-}
-
-static __inline void
-Mus_Play(BASE_PAR_DECL int handle, int looping)
-{
-  BASE_EXT_DECL
-  register struct Library * a6 __asm("a6") = DOOMSND_BASE_NAME;
-  register int d0 __asm("d0") = handle;
-  register int d1 __asm("d1") = looping;
-  __asm volatile ("jsr a6@(-0x4e:W)"
-  : /* No Output */
-  : "r" (a6), "r" (d0), "r" (d1)
-  : "d0", "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
-}
-
-static __inline void
-Mus_Stop(BASE_PAR_DECL int handle)
-{
-  BASE_EXT_DECL
-  register struct Library * a6 __asm("a6") = DOOMSND_BASE_NAME;
-  register int d0 __asm("d0") = handle;
-  __asm volatile ("jsr a6@(-0x54:W)"
-  : /* No Output */
-  : "r" (a6), "r" (d0)
-  : "d0", "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
-}
-
-static __inline void
-Mus_Pause(BASE_PAR_DECL int handle)
-{
-  BASE_EXT_DECL
-  register struct Library * a6 __asm("a6") = DOOMSND_BASE_NAME;
-  register int d0 __asm("d0") = handle;
-  __asm volatile ("jsr a6@(-0x5a:W)"
-  : /* No Output */
-  : "r" (a6), "r" (d0)
-  : "d0", "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
-}
-
-static __inline void
-Mus_Resume(BASE_PAR_DECL int handle)
-{
-  BASE_EXT_DECL
-  register struct Library * a6 __asm("a6") = DOOMSND_BASE_NAME;
-  register int d0 __asm("d0") = handle;
-  __asm volatile ("jsr a6@(-0x60:W)"
-  : /* No Output */
-  : "r" (a6), "r" (d0)
-  : "d0", "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
-}
-
-static __inline int
-Mus_Done(BASE_PAR_DECL int handle)
-{
-  BASE_EXT_DECL
-  register int res __asm("d0");
-  register struct Library * a6 __asm("a6") = DOOMSND_BASE_NAME;
-  register int d0 __asm("d0") = handle;
-  __asm volatile ("jsr a6@(-0x66:W)"
-  : "=r" (res)
-  : "r" (a6), "r" (d0)
-  : "d0", "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
-  return res;
-}
-
-#undef BASE_EXT_DECL
-#undef BASE_EXT_DECL0
-#undef BASE_PAR_DECL
-#undef BASE_PAR_DECL0
-#undef DOOMSND_BASE_NAME
-
+#endif
 #endif /*  _INLINE_DOOMSND_H  */

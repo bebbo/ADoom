@@ -63,7 +63,6 @@ int STDARGS main(int argc, char *argv[])
     STRPTR *toolarray, s;
     int i, p;
 
-    DEBUGPRINT(("STARTUP main\n"));
 
     /* these command line arguments are flags */
     static char *flags[] = {
@@ -98,38 +97,27 @@ int STDARGS main(int argc, char *argv[])
             I_Error("malloc(%d) failed", strlen(wb_arg->wa_Name) + 1);
         strcpy(myargv[myargc++], wb_arg->wa_Name);
     }
-
-    DEBUGPRINT(("opening icon.library\n"));
-
-    if ((IconBase = OpenLibrary("icon.library", 0)) == NULL)
+    if ((IconBase = OpenLibrary(ICONNAME, 0)) == NULL)
         I_Error("Can't open icon.library");
-
-    DEBUGSTEP();
-
     if ((obj = GetDiskObject(myargv[0])) != NULL) {
         toolarray = obj->do_ToolTypes;
         for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
             if (FindToolType(toolarray, &flags[i][1]) != NULL) {
                 myargv[myargc++] = flags[i];
-                DEBUGPRINT(("%s",myargv[myargc-1]));
             }
         }
         for (i = 0; i < sizeof(settings) / sizeof(settings[0]); i++) {
             if ((s = FindToolType(toolarray, &settings[i][1])) != NULL) {
                 myargv[myargc++] = settings[i];
-                DEBUGPRINT(("%s",myargv[myargc-1]));
                 if ((myargv[myargc] = malloc(strlen(s) + 1)) == NULL)
                     I_Error("malloc(%d) failed", strlen(s) + 1);
                 strcpy(myargv[myargc++], s);
-                DEBUGPRINT(("%s",myargv[myargc-1]));
             }
         }
         FreeDiskObject(obj);
     }
-
-    DEBUGSTEP();
-
-    DEBUGPRINT(("argc %d myargc %d", argc, myargc));
+    CloseLibrary(IconBase);
+    IconBase = NULL;
 
     if (argc != myargc) {
         printf("\nIcon tooltypes translated command line to:\n\n    ");
@@ -156,26 +144,19 @@ int STDARGS main(int argc, char *argv[])
         cpu_type = atoi(myargv[p + 1]);
     }
 
-    DEBUGSTEP();
-
     if (cpu_type >= 68060) {
         if ((SysBase->AttnFlags & AFF_68881) != 0) {
-            DEBUGSTEP();
             SetFPMode(); /* set FPU rounding mode to "trunc towards -infinity" */
             FixedMul = FixedMul_060fpu;
             FixedDiv = FixedDiv_060fpu;
         } else {
-            DEBUGSTEP();
             FixedMul = FixedMul_060;
             FixedDiv = FixedDiv_040;
         }
     } else {
-        DEBUGSTEP();
-        FixedMul = &FixedMul_040;
-        FixedDiv = &FixedDiv_040;
+        FixedMul = FixedMul_040;
+        FixedDiv = FixedDiv_040;
     }
-
-    printf("success 4!\n");
 
     p = M_CheckParm("-forceversion");
     if (p && p < myargc - 1)
