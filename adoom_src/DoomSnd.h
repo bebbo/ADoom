@@ -25,7 +25,7 @@
 
 BASE_EXT_DECL0
 
-__inline void
+static __inline void
 Sfx_SetVol(BASE_PAR_DECL int vol)
 {
   BASE_EXT_DECL
@@ -37,7 +37,7 @@ Sfx_SetVol(BASE_PAR_DECL int vol)
   : "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
 }
 
-__inline void
+static __inline void
 Sfx_Start(BASE_PAR_DECL char * wave, int cnum, int step, int vol, int sep, int length)
 {
   BASE_EXT_DECL
@@ -54,7 +54,7 @@ Sfx_Start(BASE_PAR_DECL char * wave, int cnum, int step, int vol, int sep, int l
   : "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
 }
 
-__inline void
+static __inline void
 Sfx_Update(BASE_PAR_DECL int cnum, int step, int vol, int sep)
 {
   BASE_EXT_DECL
@@ -69,7 +69,7 @@ Sfx_Update(BASE_PAR_DECL int cnum, int step, int vol, int sep)
   : "a0", "a1", "fp0", "fp1", "cc", "memory");
 }
 
-__inline void
+static __inline void
 Sfx_Stop(BASE_PAR_DECL int cnum)
 {
   BASE_EXT_DECL
@@ -81,7 +81,7 @@ Sfx_Stop(BASE_PAR_DECL int cnum)
   : "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
 }
 
-__inline int
+static __inline int
 Sfx_Done(BASE_PAR_DECL int cnum)
 {
   BASE_EXT_DECL
@@ -95,7 +95,7 @@ Sfx_Done(BASE_PAR_DECL int cnum)
   return res;
 }
 
-__inline void
+static __inline void
 Mus_SetVol(BASE_PAR_DECL int vol)
 {
   BASE_EXT_DECL
@@ -107,7 +107,7 @@ Mus_SetVol(BASE_PAR_DECL int vol)
   : "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
 }
 
-__inline int
+static __inline int
 Mus_Register(BASE_PAR_DECL void * musdata)
 {
   BASE_EXT_DECL
@@ -121,7 +121,7 @@ Mus_Register(BASE_PAR_DECL void * musdata)
   return res;
 }
 
-__inline void
+static __inline void
 Mus_Unregister(BASE_PAR_DECL int handle)
 {
   BASE_EXT_DECL
@@ -133,7 +133,7 @@ Mus_Unregister(BASE_PAR_DECL int handle)
   : "d0", "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
 }
 
-__inline void
+static __inline void
 Mus_Play(BASE_PAR_DECL int handle, int looping)
 {
   BASE_EXT_DECL
@@ -146,7 +146,7 @@ Mus_Play(BASE_PAR_DECL int handle, int looping)
   : "d0", "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
 }
 
-__inline void
+static __inline void
 Mus_Stop(BASE_PAR_DECL int handle)
 {
   BASE_EXT_DECL
@@ -158,7 +158,7 @@ Mus_Stop(BASE_PAR_DECL int handle)
   : "d0", "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
 }
 
-__inline void
+static __inline void
 Mus_Pause(BASE_PAR_DECL int handle)
 {
   BASE_EXT_DECL
@@ -170,7 +170,7 @@ Mus_Pause(BASE_PAR_DECL int handle)
   : "d0", "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
 }
 
-__inline void
+static __inline void
 Mus_Resume(BASE_PAR_DECL int handle)
 {
   BASE_EXT_DECL
@@ -182,7 +182,7 @@ Mus_Resume(BASE_PAR_DECL int handle)
   : "d0", "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
 }
 
-__inline int
+static __inline int
 Mus_Done(BASE_PAR_DECL int handle)
 {
   BASE_EXT_DECL
