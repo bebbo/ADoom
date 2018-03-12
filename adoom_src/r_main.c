@@ -774,10 +774,7 @@ void R_SetupFrame(player_t* player)
 //
 void R_RenderPlayerView(player_t* player)
 {
-    DEBUGSTEP();
     R_SetupFrame(player);
-
-    DEBUGSTEP();
 
     // Clear buffers.
     R_ClearClipSegs();
@@ -785,38 +782,22 @@ void R_RenderPlayerView(player_t* player)
     R_ClearPlanes();
     R_ClearSprites();
 
-    DEBUGSTEP();
-
     // check for new console commands.
     NetUpdate();
-
-    DEBUGSTEP();
 
     // The head node is the last node output.
     R_RenderBSPNode(numnodes - 1);
 
-    DEBUGSTEP();
-
     // Check for new console commands.
     NetUpdate();
-
-    DEBUGSTEP();
 
     R_DrawPlanes();
 
-    DEBUGSTEP();
-
     // Check for new console commands.
     NetUpdate();
-
-    DEBUGSTEP();
 
     R_DrawMasked();
 
-    DEBUGSTEP();
-
     // Check for new console commands.
     NetUpdate();
-
-    DEBUGSTEP();
 }

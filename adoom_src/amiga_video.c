@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include <proto/asl.h>
-#include <proto/cybergraphics.h>
+#include <inline/cybergraphics.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>

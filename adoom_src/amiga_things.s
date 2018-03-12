@@ -130,22 +130,22 @@ _R_AddSprites:
 ;-----------------------------------------------------------------------
 ; R_DrawMasked (in r_things.c) by Arto Huusko <arto.huusko@pp.qnet.fi>
 
-;;;		xref	@R_SortVisSprites
+;;;		xref	_R_SortVisSprites
 		xref	_vissprite_p	;vissprite_t*
 		xref	_vissprites	;FAR vissprite_t[MAXVISSPRITES]
 		xref	_ds_p		;drawseg_t*
 		xref	_drawsegs	;FAR drawseg_t drawsegs[MAXDRAWSEGS]
-		xref	@R_RenderMaskedSegRange
+		xref	_R_RenderMaskedSegRange
 		xref	_viewangleoffset	;int
 		xref	_vsprsortedhead	;vissprite_t
-		xref	@R_DrawPlayerSprites
-		xref	@R_PointOnSegSide
-		xref	@R_RenderMaskedSegRange
-;;;		xref	@R_DrawVisSprite
+		xref	_R_DrawPlayerSprites
+		xref	_R_PointOnSegSide
+		xref	_R_RenderMaskedSegRange
+;;;		xref	_R_DrawVisSprite
 		xref	_mfloorclip
 		xref	_mceilingclip
 		xref	_viewheight
-;;;		xref	@R_DrawSprite
+;;;		xref	_R_DrawSprite
 
 		STRUCTURE	vissprite,0
 
@@ -182,7 +182,7 @@ _R_AddSprites:
 		LABEL	ds_size
 
 		cnop	0,4
-@R_DrawMasked:
+_R_DrawMasked:
 _R_DrawMasked:
 		movem.l	a2/a3,-(sp)
 		jsr	(_R_SortVisSprites)
@@ -260,24 +260,24 @@ _R_DrawMasked:
 ;-----------------------------------------------------------------------
 ; R_DrawSprite (in r_things.c) by Arto Huusko <arto.huusko@pp.qnet.fi>
 
-;;;		xref	@R_SortVisSprites
+;;;		xref	_R_SortVisSprites
 		xref	_vissprite_p	;vissprite_t*
 		xref	_vissprites	;FAR vissprite_t[MAXVISSPRITES]
 		xref	_ds_p		;drawseg_t*
 		xref	_drawsegs	;FAR drawseg_t drawsegs[MAXDRAWSEGS]
-		xref	@R_RenderMaskedSegRange
+		xref	_R_RenderMaskedSegRange
 		xref	_viewangleoffset	;int
 		xref	_vsprsortedhead	;vissprite_t
-		xref	@R_DrawPlayerSprites
-		xref	@R_PointOnSegSide
-		xref	@R_RenderMaskedSegRange
-;;;		xref	@R_DrawVisSprite
+		xref	_R_DrawPlayerSprites
+		xref	_R_PointOnSegSide
+		xref	_R_RenderMaskedSegRange
+;;;		xref	_R_DrawVisSprite
 		xref	_mfloorclip
 		xref	_mceilingclip
 		xref	_viewheight
-		xref	@memcpy
+		xref	_memcpy
 
-@R_DrawSprite:
+_R_DrawSprite:
 _R_DrawSprite:
 
 		movem.l	d2-d7/a2/a3/a5/a6,-(sp)
@@ -290,10 +290,10 @@ _R_DrawSprite:
 		blt.b	.rds_Skip1
 		add.l	d1,d1
 ;;;		move.l	#clipbot,a0
-		lea	clipbot,a0
+		lea	clipbot(a4),a0
 		add.l	d1,a0
 ;;;		move.l	#cliptop,a1
-		lea	cliptop,a1
+		lea	cliptop(a4),a1
 		add.l	d1,a1
 
 		btst.l	#1,d1
@@ -411,7 +411,7 @@ _R_DrawSprite:
 		blt.b	.rdsl2_Next
 		add.l	d5,d5
 ;;;		move.l	#clipbot,a0
-		lea	clipbot,a0
+		lea	clipbot(a4),a0
 		add.l	d5,a0
 		move.l	ds_sprbottomclip(a2),a1
 		add.l	d5,a1
@@ -431,7 +431,7 @@ _R_DrawSprite:
 		blt.b	.rdsl2_Next
 		add.l	d5,d5
 ;;;		move.l	#cliptop,a0
-		lea	cliptop,a0
+		lea	cliptop(a4),a0
 		add.l	d5,a0
 		move.l	ds_sprtopclip(a2),a1
 		add.l	d5,a1
@@ -451,10 +451,10 @@ _R_DrawSprite:
 		blt.b	.rdsl2_Next
 		lsl.l	#1,d5
 ;;;		move.l	#cliptop,a0
-		lea	cliptop,a0
+		lea	cliptop(a4),a0
 		add.l	d5,a0
 ;;;		move.l	#clipbot,a1
-		lea	clipbot,a1
+		lea	clipbot(a4),a1
 		add.l	d5,a1
 		move.l	ds_sprbottomclip(a2),a5
 		move.l	ds_sprtopclip(a2),a6
@@ -485,10 +485,10 @@ _R_DrawSprite:
 		add.l	d7,d7
 		move.l	_viewheight(a4),d1
 ;;;		move.l	#clipbot,a0
-		lea	clipbot,a0
+		lea	clipbot(a4),a0
 		add.l	d7,a0
 ;;;		move.l	#cliptop,a1
-		lea	cliptop,a1
+		lea	cliptop(a4),a1
 		add.l	d7,a1
 .rds_Loop3:
 		cmp.w	#-2,(a0)+
@@ -503,10 +503,10 @@ _R_DrawSprite:
 
 .rds_SkipL3:
 ;;;		move.l	#clipbot,_mfloorclip(a4)
-		lea	clipbot,a0
+		lea	clipbot(a4),a0
 		move.l	a0,_mfloorclip(a4)
 ;;;		move.l	#cliptop,_mceilingclip(a4)
-		lea	cliptop,a0
+		lea	cliptop(a4),a0
 		move.l	a0,_mceilingclip(a4)
 		move.l	a3,a0
 		movem.l	(sp)+,d2-d7/a2/a3/a5/a6
@@ -627,7 +627,7 @@ _R_DrawSprite:
 ;-----------------------------------------------------------------------
 ; R_DrawVisSprite (in r_things.c) by Arto Huusko <arto.huusko@pp.qnet.fi>
 
-		xref	@W_CacheLumpNum
+		xref	_W_CacheLumpNum
 		xref	_firstspritelump
 		xref	_dc_colormap
 		xref	_colfunc
@@ -642,7 +642,7 @@ _R_DrawSprite:
 		xref	_centeryfrac
 		xref	_FixedMul
 		xref	_dc_x
-		xref	@R_DrawMaskedColumn
+		xref	_R_DrawMaskedColumn
 		xref	_basecolfunc
 		xref	_detailshift
 
@@ -652,7 +652,7 @@ _R_DrawSprite:
 ; copies of the sprite->x1 sprite->x2
 
 		cnop	0,4
-@R_DrawVisSprite:
+_R_DrawVisSprite:
 _R_DrawVisSprite:
 
 		movem.l	d2/d7/a2/a3,-(sp)
@@ -783,7 +783,7 @@ MAXINT		equ	$7FFFFFFF
 MAXSPRITE	equ	128
 
 		cnop	0,4
-@R_SortVisSprites:
+_R_SortVisSprites:
 _R_SortVisSprites:
 		movem.l	a2/a3/a5,-(sp)
 
@@ -827,7 +827,7 @@ _R_SortVisSprites:
 		rts
 
 		cnop	0,4
-@R_NewVisSprite:
+_R_NewVisSprite:
 _R_NewVisSprite:
 		move.l	_vissprite_p(a4),d0
 		beq.b	.rn_FirstTime
@@ -847,7 +847,7 @@ _R_NewVisSprite:
 
 .rn_OverFlow:
 ;;;		move.l	#overflow,d0
-		lea	overflow,a0
+		lea	overflow(a4),a0
 		move.l	a0,d0
 		rts
 .rn_FirstTime:
@@ -856,7 +856,7 @@ _R_NewVisSprite:
 		rts
 
 		cnop	0,4
-@R_ClearSprites:
+_R_ClearSprites:
 _R_ClearSprites:
 		move.l	#_vissprites,a0
 		move.l	#0,_vissprite_p(a4)

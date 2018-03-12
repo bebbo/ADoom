@@ -165,7 +165,6 @@ void R_ClipPassWallSegment(int first, int last)
 {
     cliprange_t* start;
 
-    DEBUGSTEP();
     // Find the first range that touches the range
     //  (adjacent pixels are touching).
     start = solidsegs;
@@ -437,8 +436,6 @@ void R_Subsector(int num)
         I_Error("R_Subsector: ss %i with numss = %i", num, numsubsectors);
 #endif
 
-    DEBUGSTEP();
-
     sscount++;
     sub = &subsectors[num];
     frontsector = sub->sector;
@@ -457,18 +454,10 @@ void R_Subsector(int num)
 
     R_AddSprites(frontsector);
 
-    DEBUGSTEP();
-
     while (count--) {
-
-
-        DEBUGSTEP();
-
         R_AddLine(line);
         line++;
     }
-
-    DEBUGSTEP();
 }
 
 //

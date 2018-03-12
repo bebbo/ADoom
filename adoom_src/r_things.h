@@ -67,10 +67,9 @@ extern fixed_t pspriteiscale2;
 
 void R_DrawMaskedColumn(REGA0(column_t* column));
 
-extern void R_SortVisSprites(void);
-extern void R_ProjectSprite(REGA0(mobj_t* thing));
+void R_SortVisSprites(void);
 
-extern void R_AddSprites(REGA0(sector_t* sec));
+void R_AddSprites(REGA0(sector_t* sec));
 void R_AddPSprites(void);
 void R_DrawSprites(void);
 void R_InitSprites(char** namelist);

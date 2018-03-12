@@ -728,7 +728,7 @@ void M_NewGame(int choice)
 //
 //      M_Episode
 //
-int epi = 0;
+int epi;
 
 void M_DrawEpisode(void)
 {
@@ -1514,8 +1514,6 @@ void M_Ticker(void)
 //
 void M_Init(void)
 {
-    DEBUGSTEP();
-
     currentMenu = &MainDef;
     menuactive = 0;
     itemOn = currentMenu->lastOn;
@@ -1530,14 +1528,11 @@ void M_Init(void)
     // Here we could catch other version dependencies,
     //  like HELP1/2, and four episodes.
 
-    DEBUGSTEP();
-
     switch (gamemode) {
     case commercial:
         // This is used because DOOM 2 had only one HELP
         //  page. I use CREDIT as second page now, but
         //  kept this hack for educational purposes.
-        DEBUGSTEP();
         MainMenu[readthis] = MainMenu[quitdoom];
         MainDef.numitems--;
         MainDef.y += 8;
@@ -1546,7 +1541,6 @@ void M_Init(void)
         ReadDef1.x = 330;
         ReadDef1.y = 165;
         ReadMenu1[0].routine = M_FinishReadThis;
-        DEBUGSTEP();
         break;
     case shareware:
     // Episode 2 and 3 are handled,
@@ -1554,12 +1548,10 @@ void M_Init(void)
     case registered:
         // We need to remove the fourth episode.
         EpiDef.numitems--;
-        DEBUGSTEP();
         break;
     case retail:
     // We are fine.
     default:
         break;
     }
-    DEBUGSTEP();
 }

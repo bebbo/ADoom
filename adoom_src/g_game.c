@@ -403,7 +403,6 @@ void G_DoLoadLevel(void)
 {
     int i;
 
-    DEBUGSTEP();
     // Set the sky map.
     // First thing, we have a dummy sky texture name,
     //  a flat. The data is in the WAD only because
@@ -421,7 +420,6 @@ void G_DoLoadLevel(void)
             skytexture = R_TextureNumForName("SKY2");
     }
 
-    DEBUGSTEP();
     levelstarttic = gametic;  // for time calculation
 
     if (wipegamestate == GS_LEVEL)
@@ -429,24 +427,18 @@ void G_DoLoadLevel(void)
 
     gamestate = GS_LEVEL;
 
-    DEBUGSTEP();
     for (i = 0; i < MAXPLAYERS; i++) {
         if (playeringame[i] && players[i].playerstate == PST_DEAD)
             players[i].playerstate = PST_REBORN;
         memset(players[i].frags, 0, sizeof(players[i].frags));
     }
 
-    DEBUGSTEP();
     P_SetupLevel(gameepisode, gamemap, 0, gameskill);
-    DEBUGSTEP();
     displayplayer = consoleplayer;  // view the guy you are playing
     starttime = I_GetTime();
     gameaction = ga_nothing;
-    DEBUGSTEP();
-
     Z_CheckHeap();
 
-    DEBUGSTEP();
     // clear cmd building stuff
     memset(gamekeydown, 0, sizeof(gamekeydown));
     joyxmove = joyymove = 0;
@@ -652,7 +644,6 @@ void G_Ticker(void)
         }
     }
 
-    DEBUGSTEP();
     // do main actions
     switch (gamestate) {
     case GS_LEVEL:
@@ -674,8 +665,6 @@ void G_Ticker(void)
         D_PageTicker();
         break;
     }
-
-    DEBUGSTEP();
 }
 
 //
@@ -1216,7 +1205,6 @@ void G_DeferedInitNew(skill_t skill, int episode, int map)
 
 void G_DoNewGame(void)
 {
-    DEBUGSTEP();
     demoplayback = false;
     netdemo = false;
     netgame = false;
@@ -1304,7 +1292,6 @@ void G_InitNew(skill_t skill, int episode, int map)
 
     viewactive = true;
 
-    DEBUGSTEP();
     // set the sky map for the episode
     if (gamemode == commercial) {
         skytexture = R_TextureNumForName("SKY3");
@@ -1328,7 +1315,6 @@ void G_InitNew(skill_t skill, int episode, int map)
             break;
         }
 
-    DEBUGSTEP();
     G_DoLoadLevel();
 }
 

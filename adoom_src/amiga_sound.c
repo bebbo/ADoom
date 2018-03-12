@@ -75,7 +75,7 @@ static int changepitch;
 /* sampling freq (Hz) for each pitch step when changepitch is TRUE
    calculated from (2^((i-128)/64))*11025
    I'm not sure if this is the right formula */
-static UWORD freqs[256] = {
+static const UWORD freqs[256] = {
     2756,  2786,  2817,  2847,  2878,  2910,  2941,  2973,  3006,  3038,  3072,  3105,  3139,  3173,  3208,  3242,
     3278,  3313,  3350,  3386,  3423,  3460,  3498,  3536,  3574,  3613,  3653,  3692,  3733,  3773,  3814,  3856,
     3898,  3940,  3983,  4027,  4071,  4115,  4160,  4205,  4251,  4297,  4344,  4391,  4439,  4487,  4536,  4586,
@@ -93,7 +93,7 @@ static UWORD freqs[256] = {
     31183, 31523, 31866, 32213, 32564, 32919, 33277, 33639, 34006, 34376, 34750, 35129, 35511, 35898, 36289, 36684,
     37084, 37487, 37896, 38308, 38725, 39147, 39573, 40004, 40440, 40880, 41325, 41775, 42230, 42690, 43155, 43625};
 
-struct Library *DoomSndBase = NULL;
+static struct Library *DoomSndBase = NULL;
 
 /**********************************************************************/
 //
@@ -213,7 +213,6 @@ void I_InitSound(void)
         }
     }
 
-    DEBUGSTEP();
 
     clock_constant = 3579545; /* NTSC */
     if (GfxBase) {
@@ -248,8 +247,6 @@ void I_InitSound(void)
             lengths[i] = lengths[(S_sfx[i].link - S_sfx) / sizeof(sfxinfo_t)];
         }
     }
-
-    DEBUGSTEP();
 
     fprintf(stderr, " pre-cached all sound data\n");
 

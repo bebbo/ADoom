@@ -32,7 +32,7 @@ static const char rcsid[] = "$Id: sounds.c,v 1.3 1997/01/29 22:40:44 b1 Exp $";
 // Information about all the music
 //
 
-FAR musicinfo_t S_music[] = {
+musicinfo_t S_music[] = {
     {0},           {"e1m1", 0},   {"e1m2", 0},   {"e1m3", 0},   {"e1m4", 0},   {"e1m5", 0},   {"e1m6", 0},
     {"e1m7", 0},   {"e1m8", 0},   {"e1m9", 0},   {"e2m1", 0},   {"e2m2", 0},   {"e2m3", 0},   {"e2m4", 0},
     {"e2m5", 0},   {"e2m6", 0},   {"e2m7", 0},   {"e2m8", 0},   {"e2m9", 0},   {"e3m1", 0},   {"e3m2", 0},
@@ -48,7 +48,7 @@ FAR musicinfo_t S_music[] = {
 // Information about all the sfx
 //
 
-FAR sfxinfo_t S_sfx[] = {
+sfxinfo_t S_sfx[] = {
     // S_sfx[0] needs to be a dummy for odd reasons.
     {"none", false, 0, 0, -1, -1, 0},
 

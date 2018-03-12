@@ -643,7 +643,7 @@ sw32_4a		move.w	d6,3*SCREENWIDTH(a0)
 l.loop_end4
 		dbf	d7,l.loop4
 		sub.l	_fuzzoffset(a4),a1
-		move.l	a1,_fuzzpos
+		move.l	a1,_fuzzpos(a4)
 l.end4
 		movem.l (sp)+,d4/d6-d7/a2/a3
 		rts
@@ -747,7 +747,7 @@ sw32_5a		move.b	(a2),3*SCREENWIDTH(a0)
 l.loop_end5
 		dbf	d7,l.loop5
 		sub.l	_fuzzoffset(a4),a1
-		move.l	a1,_fuzzpos
+		move.l	a1,_fuzzpos(a4)
 l.end5
 		movem.l (sp)+,d4/d6-d7/a2/a3
 		rts
@@ -1138,22 +1138,22 @@ l.end8
 _R_DrawSpan_060
 @R_DrawSpan_060
 		movem.l d2-d7/a2/a3,-(sp)
-		move.l  (_ds_y),d0
-		move.l  (_ds_x1),d1     ; dest = ylookup[_ds_y] + columnofs[_ds_x1]
-		movea.l	(_ylookup2),a0	;      = ylookup2[_ds_y] + _ds_x1
+		move.l  _ds_y(a4),d0
+		move.l  _ds_x1(a4),d1     ; dest = ylookup[_ds_y] + columnofs[_ds_x1]
+		movea.l	_ylookup2(a4),a0	;      = ylookup2[_ds_y] + _ds_x1
 		move.l  (a0,d0.l*4),a0
-;;		movea.l	(_columnofs),a1
+;;		movea.l	_columnofs(a4),a1
 ;;		add.l   (a1,d1.l*4),a0
 		adda.l	d1,a0			; new
-		move.l  (_ds_source),a1
-		move.l  (_ds_colormap),a2
-		move.l  (_ds_x2),d7     ; count = _ds_x2 - _ds_x1
+		move.l  _ds_source(a4),a1
+		move.l  _ds_colormap(a4),a2
+		move.l  _ds_x2(a4),d7     ; count = _ds_x2 - _ds_x1
 		sub.l   d1,d7
 		addq.l  #1,d7
-		move.l  (_ds_xfrac),d0
-		move.l  (_ds_yfrac),d1
-		move.l  (_ds_xstep),d2
-		move.l  (_ds_ystep),d3
+		move.l  _ds_xfrac(a4),d0
+		move.l  _ds_yfrac(a4),d1
+		move.l  _ds_xstep(a4),d2
+		move.l  _ds_ystep(a4),d3
 		move.l  a0,d4
 		btst    #0,d4
 		beq.b   l.skipb9
