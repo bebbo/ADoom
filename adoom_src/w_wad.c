@@ -66,6 +66,7 @@ void** lumpcache;
 
 #define strcmpi strcasecmp
 
+__stdargs char * strupr(char* s);
 #if defined(USECLIB2)
 void strupr(char* s)
 {
