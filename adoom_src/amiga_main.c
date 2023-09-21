@@ -45,6 +45,13 @@ char __stdiov37[] = "/AUTO/CLOSE/WAIT";
 #include "m_argv.h"
 #include "m_fixed.h"
 
+/* check for NDK_3.2 headers */
+#if INCLUDE_VERSION >= 47
+#define FTTCAST (CONST_STRPTR *)
+#else
+#define FTTCAST
+#endif
+
 /**********************************************************************/
 struct Library *IconBase = NULL;
 
@@ -100,12 +107,12 @@ int STDARGS main(int argc, char *argv[])
     if ((obj = GetDiskObject(myargv[0])) != NULL) {
         toolarray = obj->do_ToolTypes;
         for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
-            if (FindToolType(toolarray, &flags[i][1]) != NULL) {
+            if (FindToolType(FTTCAST toolarray, &flags[i][1]) != NULL) {
                 myargv[myargc++] = flags[i];
             }
         }
         for (i = 0; i < sizeof(settings) / sizeof(settings[0]); i++) {
-            if ((s = FindToolType(toolarray, &settings[i][1])) != NULL) {
+            if ((s = FindToolType(FTTCAST toolarray, &settings[i][1])) != NULL) {
                 myargv[myargc++] = settings[i];
                 if ((myargv[myargc] = malloc(strlen(s) + 1)) == NULL)
                     I_Error("malloc(%d) failed", strlen(s) + 1);
